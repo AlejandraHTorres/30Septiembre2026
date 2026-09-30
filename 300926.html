@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Día de los Carritos 🏎️❤️</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Playfair+Display:ital,wght@0,700;1,600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        racingRed: '#FF2A4D',
+                        racingYellow: '#FFC700',
+                        darkAsphalt: '#0D0F12',
+                        cardBg: '#161922',
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-slow': 'bounce 2s infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0D0F12;
+            color: #FFFFFF;
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Pattern de pista de carreras */
+        .checkered-pattern {
+            background-color: #0d0f12;
+            background-image: linear-gradient(45deg, #181c24 25%, transparent 25%), 
+                              linear-gradient(-45deg, #181c24 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #181c24 75%), 
+                              linear-gradient(-45deg, transparent 75%, #181c24 75%);
+            background-size: 40px 40px;
+            background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
+        }
+
+        .checkered-border {
+            background: repeating-linear-gradient(
+                45deg,
+                #000,
+                #000 15px,
+                #fff 15px,
+                #fff 30px
+            );
+        }
+
+        .glass-panel {
+            background: rgba(22, 25, 34, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glow-red {
+            box-shadow: 0 0 25px rgba(255, 42, 77, 0.5);
+        }
+
+        .glow-yellow {
+            box-shadow: 0 0 25px rgba(255, 199, 0, 0.5);
+        }
+
+        @keyframes scaleUp {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+
+        .animate-countdown {
+            animation: scaleUp 0.9s ease-in-out forwards;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d0f12;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #FF2A4D;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="checkered-pattern min-h-screen flex flex-col justify-between selection:bg-racingRed selection:text-white">
+
+    <header class="w-full py-4 px-4 sm:px-6 flex flex-wrap justify-between items-center gap-3 border-b border-white/10 glass-panel z-20">
+        <div class="flex items-center space-x-2">
+            <span class="text-2xl">🏎️</span>
+            <h1 class="text-lg sm:text-xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-racingRed via-racingYellow to-white">
+                DÍA DE LOS CARRITOS
+            </h1>
+        </div>
+
+        <!-- Archivo de Audio para reproducir "sound.mp3" -->
+        <audio id="bgMusic" src="sound.mp3" loop preload="auto"></audio>
+
+        <!-- Controles independientes de Pausa y Continuar -->
+        <div class="flex items-center space-x-2 bg-black/40 p-1.5 rounded-full border border-white/10">
+            <!-- Estado actual -->
+            <span id="soundStatusBadge" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-red-500/20 text-red-300 border border-red-500/30 flex items-center space-x-1">
+                <span id="soundStatusDot" class="w-2 h-2 rounded-full bg-red-500"></span>
+                <span id="soundStatusText">Detenido</span>
+            </span>
+
+            <!-- Botón Pausar -->
+            <button onclick="pauseAudio()" class="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-xs font-semibold tracking-wide transition flex items-center space-x-1 border border-white/10">
+                <span>⏸️</span>
+                <span>Pausar</span>
+            </button>
+
+            <!-- Botón Continuar -->
+            <button onclick="playAudio()" class="px-3 py-1.5 rounded-full bg-racingRed hover:bg-red-600 active:scale-95 text-xs font-semibold tracking-wide transition flex items-center space-x-1 border border-red-400 text-white shadow-sm">
+                <span>▶️</span>
+                <span>Continuar</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-4 relative z-10">
+
+        <!-- PANTALLA 1: INICIO CON BOTÓN READY -->
+        <section id="screen-ready" class="text-center max-w-lg w-full glass-panel p-8 rounded-3xl glow-red transition-all duration-500">
+            <div class="relative w-32 h-32 mx-auto mb-6 flex items-center justify-center">
+                <div class="absolute inset-0 bg-racingRed/20 rounded-full animate-ping"></div>
+                <div class="text-7xl relative z-10 animate-bounce-slow">🏁</div>
+            </div>
+            
+            <h2 class="text-3xl sm:text-4xl font-black uppercase tracking-tight mb-3">
+                ¿Estás listo mi piloto?
+            </h2>
+            <p class="text-gray-300 mb-8 text-sm sm:text-base leading-relaxed">
+                Hoy celebramos el <span class="text-racingYellow font-bold">Día de los Carritos</span>. Presiona para encender los motores y comenzar la carrera más especial. ❤️
+            </p>
+
+            <button onclick="startCountdown()" class="w-full py-4 px-8 bg-gradient-to-r from-racingRed to-red-600 hover:from-red-600 hover:to-racingRed text-white font-black text-2xl tracking-widest rounded-2xl glow-red hover:scale-105 active:scale-95 transition-all duration-300 uppercase shadow-lg border-2 border-red-400">
+                READY 🚦
+            </button>
+        </section>
+
+        <!-- PANTALLA 2: CUENTA REGRESIVA 3, 2, 1, GO! -->
+        <section id="screen-countdown" class="hidden text-center max-w-md w-full glass-panel p-8 rounded-3xl flex flex-col items-center justify-center min-h-[350px]">
+            <!-- Semáforo de carrera -->
+            <div class="flex space-x-4 mb-8 bg-black/60 p-4 rounded-2xl border border-white/10">
+                <div id="light-red" class="w-8 h-8 rounded-full bg-red-950 border border-red-800 transition-all duration-300"></div>
+                <div id="light-yellow" class="w-8 h-8 rounded-full bg-yellow-950 border border-yellow-800 transition-all duration-300"></div>
+                <div id="light-green" class="w-8 h-8 rounded-full bg-green-950 border border-green-800 transition-all duration-300"></div>
+            </div>
+
+            <!-- Número animado -->
+            <div id="countdown-number" class="text-8xl font-black text-racingYellow tracking-tighter drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] h-28 flex items-center justify-center">
+                3
+            </div>
+            
+            <p id="countdown-subtext" class="text-gray-400 font-bold uppercase tracking-widest mt-4 text-sm">
+                Calentando motores...
+            </p>
+        </section>
+
+        <!-- PANTALLA 3: GALERÍA DE TARJETAS (6 IMÁGENES) -->
+        <section id="screen-gallery" class="hidden max-w-xl w-full">
+            <div class="glass-panel p-6 sm:p-8 rounded-3xl shadow-2xl relative overflow-hidden border border-white/15">
+                
+                <div class="h-2 w-full checkered-border rounded-full mb-6"></div>
+
+                <!-- Indicador de Progreso -->
+                <div class="flex justify-between items-center mb-6">
+                    <span id="card-counter" class="text-xs font-black tracking-wider uppercase text-racingYellow bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20">
+                        Carrera 1 de 6
+                    </span>
+                    <div class="flex space-x-1.5" id="progress-dots"></div>
+                </div>
+
+                <!-- Contenedor de la Imagen -->
+                <div class="relative group rounded-2xl overflow-hidden mb-6 bg-black/40 border border-white/10 shadow-inner aspect-video flex items-center justify-center">
+                    <img id="gallery-image" src="" alt="Imagen de carrera" class="w-full h-full object-contain transition-all duration-500 transform hover:scale-105" onerror="handleImageError(this)">
+                    
+                    <div id="upload-overlay" class="hidden absolute inset-0 bg-black/80 p-4 flex flex-col items-center justify-center text-center">
+                        <p class="text-xs text-gray-300 mb-2">Si la imagen no carga automáticamente, puedes seleccionarla aquí:</p>
+                        <input type="file" id="file-input" accept="image/*" onchange="loadCustomImage(event)" class="text-xs text-gray-400 file:mr-2 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-racingRed file:text-white hover:file:bg-red-600 cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- Frase / Mensaje -->
+                <div class="bg-black/30 p-5 rounded-2xl border border-white/5 mb-8">
+                    <p id="gallery-text" class="text-base sm:text-lg font-medium text-gray-100 text-center leading-relaxed">
+                        <!-- Texto insertado por JS -->
+                    </p>
+                </div>
+
+                <!-- Botón Siguiente -->
+                <div class="flex justify-end">
+                    <button id="next-btn" onclick="nextCard()" class="w-full sm:w-auto py-3.5 px-8 bg-gradient-to-r from-racingYellow to-amber-500 hover:from-amber-500 hover:to-racingYellow text-black font-black text-lg rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center space-x-2">
+                        <span id="next-btn-text">Siguiente</span>
+                        <span class="text-xl">🏎️💨</span>
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- PANTALLA 4: MENSAJE FINAL Y CELEBRACIÓN -->
+        <section id="screen-final" class="hidden max-w-lg w-full text-center glass-panel p-8 sm:p-10 rounded-3xl glow-yellow relative overflow-hidden">
+            <div class="text-6xl mb-4 animate-bounce">🏆</div>
+
+            <h2 class="text-3xl sm:text-4xl font-black text-racingYellow mb-2 uppercase tracking-wide">
+                ¡Llegamos a la Meta!
+            </h2>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">
+                Ganador indiscutible de mi corazón
+            </p>
+
+            <div class="bg-black/40 p-6 rounded-2xl border border-white/10 mb-8 text-left space-y-4">
+                <p class="text-base sm:text-lg font-serif italic text-gray-200 leading-relaxed">
+                    "¡Feliz Día de los Carritos, mi amor! 🏎❤️"
+                </p>
+                <p class="text-sm sm:text-base text-gray-300 leading-relaxed">
+                    Gracias por recorrer este camino a mi lado, por ser mi copiloto favorito y la razón por la que cada curva en la vida vale la pena. No importa a dónde vayamos, el destino siempre eres tú.
+                </p>
+                <div class="pt-2 border-t border-white/10 text-right">
+                    <span class="text-racingYellow font-extrabold text-sm">Con todo mi amor infinitamente ❤️</span>
+                </div>
+            </div>
+
+            <button onclick="restartExperience()" class="py-3.5 px-8 bg-white/10 hover:bg-white/20 text-white font-bold text-base rounded-2xl border border-white/20 transition-all duration-300 flex items-center justify-center space-x-2 mx-auto">
+                <span>Volver a empezar</span>
+                <span>🔄</span>
+            </button>
+        </section>
+
+    </main>
+
+    <footer class="w-full py-4 text-center text-xs text-gray-500 glass-panel border-t border-white/10">
+        Hecho con amor para el hombre que amo ❤️ 🏁
+    </footer>
+
+    <script>
+        const cardsData = [
+            {
+                img: '1.jpg',
+                text: '30 OCTUBRE 2026 - Hoy es el día de los carritos y aunque no estoy ahí a tu lado para llenarte de estos, quería que recordaras que jamás serás espectador <3'
+            },
+            {
+                img: '2.jpg',
+                text: 'Contigo cualquier camino se siente como el destino perfecto.'
+            },
+            {
+                img: '3.jpg',
+                text: 'Mi amor por ti no tiene frenos ni marcha atrás.'
+            },
+            {
+                img: '4.jpg',
+                text: 'Si la vida es un viaje, quiero recorrerla contigo.'
+            },
+            {
+                img: '5.jpg',
+                text: 'De todos los destinos, siempre te elegiría a ti.'
+            },
+            {
+                img: '6.jpg',
+                text: 'Mi amor por ti no tiene frenos ni marcha atrás...'
+            }
+        ];
+
+        let currentCardIndex = 0;
+        let audioCtx = null;
+
+        // Reproducir la canción principal
+        function playAudio() {
+            const music = document.getElementById('bgMusic');
+            music.play().then(() => {
+                updateAudioBadge(true);
+            }).catch(err => {
+                console.log("Para reproducir 'sound.mp3', asegúrate de tener el archivo en la misma carpeta.", err);
+            });
+        }
+
+        // Pausar la canción
+        function pauseAudio() {
+            const music = document.getElementById('bgMusic');
+            music.pause();
+            updateAudioBadge(false);
+        }
+
+        // Actualizar etiqueta del estado del sonido
+        function updateAudioBadge(isPlaying) {
+            const badge = document.getElementById('soundStatusBadge');
+            const dot = document.getElementById('soundStatusDot');
+            const text = document.getElementById('soundStatusText');
+
+            if (isPlaying) {
+                badge.className = "px-2.5 py-1 text-xs font-semibold rounded-full bg-green-500/20 text-green-300 border border-green-500/30 flex items-center space-x-1";
+                dot.className = "w-2 h-2 rounded-full bg-green-400 animate-pulse";
+                text.innerText = "Reproduciendo";
+            } else {
+                badge.className = "px-2.5 py-1 text-xs font-semibold rounded-full bg-red-500/20 text-red-300 border border-red-500/30 flex items-center space-x-1";
+                dot.className = "w-2 h-2 rounded-full bg-red-500";
+                text.innerText = "Pausado";
+            }
+        }
+
+        // Generar sonidos sintéticos para la cuenta regresiva (Ready)
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playBeep(freq = 440, type = 'sine', duration = 0.15) {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) { console.log(e); }
+        }
+
+        // Sonido simulación motor acelerando al arrancar
+        function playEngineSound() {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.8);
+                
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.8);
+            } catch (e) { console.log(e); }
+        }
+
+        function showScreen(id) {
+            ['screen-ready', 'screen-countdown', 'screen-gallery', 'screen-final'].forEach(s => {
+                document.getElementById(s).classList.add('hidden');
+            });
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        // Proceso de Cuenta Regresiva -> Al finalizar inicia la canción
+        function startCountdown() {
+            initAudioContext();
+            showScreen('screen-countdown');
+            
+            const numEl = document.getElementById('countdown-number');
+            const subtextEl = document.getElementById('countdown-subtext');
+            const lightRed = document.getElementById('light-red');
+            const lightYellow = document.getElementById('light-yellow');
+            const lightGreen = document.getElementById('light-green');
+
+            lightRed.className = "w-8 h-8 rounded-full bg-red-950 border border-red-800";
+            lightYellow.className = "w-8 h-8 rounded-full bg-yellow-950 border border-yellow-800";
+            lightGreen.className = "w-8 h-8 rounded-full bg-green-950 border border-green-800";
+
+            // 3
+            numEl.innerText = "3";
+            numEl.className = "text-8xl font-black text-red-500 animate-countdown";
+            lightRed.className = "w-8 h-8 rounded-full bg-red-500 glow-red border border-red-300";
+            playBeep(350, 'square', 0.2);
+
+            // 2
+            setTimeout(() => {
+                numEl.innerText = "2";
+                numEl.className = "text-8xl font-black text-yellow-400 animate-countdown";
+                lightYellow.className = "w-8 h-8 rounded-full bg-yellow-400 glow-yellow border border-yellow-200";
+                playBeep(350, 'square', 0.2);
+            }, 1000);
+
+            // 1
+            setTimeout(() => {
+                numEl.innerText = "1";
+                numEl.className = "text-8xl font-black text-racingYellow animate-countdown";
+                playBeep(350, 'square', 0.2);
+            }, 2000);
+
+            // GO! Y arranca la canción de fondo ("sound.mp3")
+            setTimeout(() => {
+                numEl.innerText = "GO! 🏁";
+                numEl.className = "text-7xl font-black text-green-400 animate-countdown";
+                subtextEl.innerText = "¡ARRANCAMOS!";
+                lightGreen.className = "w-8 h-8 rounded-full bg-green-500 shadow-[0_0_25px_rgba(34,197,94,0.8)] border border-green-200";
+                
+                playEngineSound();
+
+                // AQUÍ REPRODUCE AUTOMÁTICAMENTE LA CANCIÓN DE FONDO
+                playAudio();
+
+            }, 3000);
+
+            // Transición automática a las imágenes
+            setTimeout(() => {
+                renderProgressDots();
+                loadCard(0);
+                showScreen('screen-gallery');
+            }, 4200);
+        }
+
+        function renderProgressDots() {
+            const container = document.getElementById('progress-dots');
+            container.innerHTML = '';
+            cardsData.forEach((_, idx) => {
+                const dot = document.createElement('div');
+                dot.id = `dot-${idx}`;
+                dot.className = `h-2 rounded-full transition-all duration-300 ${idx === 0 ? 'w-6 bg-racingYellow' : 'w-2 bg-white/20'}`;
+                container.appendChild(dot);
+            });
+        }
+
+        function loadCard(index) {
+            currentCardIndex = index;
+            const data = cardsData[index];
+
+            document.getElementById('card-counter').innerText = `Carrera ${index + 1} de ${cardsData.length}`;
+
+            cardsData.forEach((_, idx) => {
+                const dot = document.getElementById(`dot-${idx}`);
+                if (dot) {
+                    dot.className = `h-2 rounded-full transition-all duration-300 ${idx === index ? 'w-6 bg-racingYellow' : 'w-2 bg-white/20'}`;
+                }
+            });
+
+            document.getElementById('upload-overlay').classList.add('hidden');
+
+            const imgEl = document.getElementById('gallery-image');
+            imgEl.style.opacity = '0';
+            imgEl.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+                imgEl.src = data.img;
+                document.getElementById('gallery-text').innerText = data.text;
+                imgEl.style.opacity = '1';
+                imgEl.style.transform = 'scale(1)';
+            }, 200);
+
+            const nextBtnText = document.getElementById('next-btn-text');
+            if (index === cardsData.length - 1) {
+                nextBtnText.innerText = "Ver Mensaje Final";
+            } else {
+                nextBtnText.innerText = "Siguiente";
+            }
+        }
+
+        function nextCard() {
+            if (currentCardIndex < cardsData.length - 1) {
+                loadCard(currentCardIndex + 1);
+            } else {
+                showScreen('screen-final');
+                triggerConfetti();
+            }
+        }
+
+        function handleImageError(img) {
+            img.src = `https://placehold.co/800x450/161922/FF2A4D?text=Imagen+${currentCardIndex + 1}+-+Dia+de+los+Carritos`;
+            document.getElementById('upload-overlay').classList.remove('hidden');
+        }
+
+        function loadCustomImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('gallery-image').src = e.target.result;
+                    document.getElementById('upload-overlay').classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                const count = 200;
+                const defaults = { origin: { y: 0.7 } };
+
+                function fire(particleRatio, opts) {
+                    confetti(Object.assign({}, defaults, opts, {
+                        particleCount: Math.floor(count * particleRatio)
+                    }));
+                }
+
+                fire(0.25, { spread: 26, startVelocity: 55, colors: ['#FF2A4D', '#FFC700'] });
+                fire(0.2, { spread: 60, colors: ['#ffffff', '#FF2A4D'] });
+                fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+                fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, colors: ['#FFC700', '#ffffff'] });
+            }
+        }
+
+        function restartExperience() {
+            currentCardIndex = 0;
+            showScreen('screen-ready');
+        }
+    </script>
+</body>
+</html>
